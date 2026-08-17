@@ -32,13 +32,21 @@ def health():
 
 
 # Stage 2: Get all tasks
-@app.get("/tasks", summary="List all tasks")
+@app.get(
+    "/tasks",
+    summary="List all tasks",
+    description="Returns all tasks currently stored in memory.",
+)
 def get_tasks():
     return tasks
 
 
 # Stage 2: Get one task
-@app.get("/tasks/{task_id}", summary="Get one task")
+@app.get(
+    "/tasks/{task_id}",
+    summary="Get one task",
+    description="Returns a single task by its ID.",
+)
 def get_task(task_id: int):
     for task in tasks:
         if task["id"] == task_id:
@@ -51,7 +59,12 @@ def get_task(task_id: int):
 
 
 # Stage 3: Create a task
-@app.post("/tasks", status_code=201, summary="Create a task")
+@app.post(
+    "/tasks",
+    status_code=201,
+    summary="Create a task",
+    description="Creates a new task with a title and sets done to false.",
+)
 def create_task(body: dict):
     title = body.get("title")
 
