@@ -63,12 +63,25 @@ def health():
 @app.get(
     "/tasks",
     summary="List all tasks",
-    description="Returns all tasks currently stored in memory.",
+    description="Returns all tasks stored in the SQLite database.",
 )
 def get_tasks():
-    return tasks
+    conn = get_db()
 
+    rows = conn.execute(
+        "SELECT id, title, done FROM tasks"
+    ).fetchall()
 
+    conn.close()
+
+    return [
+        {
+            "id": row[0],
+            "title": row[1],
+            "done": bool(row[2]),
+        }
+        for row in rows
+    ]
 # Stage 2: Get one task
 @app.get(
     "/tasks/{task_id}",
