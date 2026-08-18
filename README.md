@@ -22,12 +22,7 @@ The API uses an **in-memory list** to store tasks. No database is used, so tasks
 
 ## Installation
 
-Clone the repository and enter the project directory:
 
-```bash
-git clone YOUR_GITHUB_REPOSITORY_URL
-cd task-api
-```
 
 Install the dependencies:
 

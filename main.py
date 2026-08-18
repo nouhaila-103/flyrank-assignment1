@@ -1,18 +1,46 @@
+import sqlite3
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
 app = FastAPI(
     title="Task API",
     version="1.0",
-    description="A simple in-memory CRUD API for managing tasks.",
+    description="A simple CRUD API using SQLite for managing tasks.",
 )
 
-# In-memory task storage
-tasks = [
-    {"id": 1, "title": "Learn FastAPI", "done": False},
-    {"id": 2, "title": "Build CRUD API", "done": False},
-    {"id": 3, "title": "Learn Git", "done": True},
-]
+DATABASE = "tasks.db"
+
+
+def get_db():
+    return sqlite3.connect(DATABASE)
+
+
+conn = get_db()
+
+conn.execute("""
+CREATE TABLE IF NOT EXISTS tasks (
+    id INTEGER PRIMARY KEY,
+    title TEXT NOT NULL,
+    done BOOLEAN NOT NULL
+)
+""")
+
+conn.commit()
+
+count = conn.execute("SELECT COUNT(*) FROM tasks").fetchone()[0]
+
+if count == 0:
+    conn.executemany(
+        "INSERT INTO tasks (id, title, done) VALUES (?, ?, ?)",
+        [
+            (1, "Learn FastAPI", False),
+            (2, "Build CRUD API", False),
+            (3, "Learn Git", True),
+        ],
+    )
+    conn.commit()
+
+conn.close()
 
 
 # Stage 1: Root endpoint
