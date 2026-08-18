@@ -151,42 +151,66 @@ def create_task(body: dict):
 # Stage 4: Update a task
 @app.put("/tasks/{task_id}", summary="Update a task")
 def update_task(task_id: int, body: dict):
-    task = next(
-        (task for task in tasks if task["id"] == task_id),
-        None,
-    )
-
-    if task is None:
-        return JSONResponse(
-            status_code=404,
-            content={"error": f"Task {task_id} not found"},
-        )
-
     if not body:
         return JSONResponse(
             status_code=400,
             content={"error": "Request body cannot be empty"},
         )
 
+    conn = get_db()
+
+    row = conn.execute(
+        "SELECT id, title, done FROM tasks WHERE id = ?",
+        (task_id,),
+    ).fetchone()
+
+    if row is None:
+        conn.close()
+        return JSONResponse(
+            status_code=404,
+            content={"error": f"Task {task_id} not found"},
+        )
+
+    current_title = row[1]
+    current_done = bool(row[2])
+
     if "title" in body:
         if not isinstance(body["title"], str) or not body["title"].strip():
+            conn.close()
             return JSONResponse(
                 status_code=400,
                 content={"error": "Title cannot be empty"},
             )
 
-        task["title"] = body["title"].strip()
+        current_title = body["title"].strip()
 
     if "done" in body:
         if not isinstance(body["done"], bool):
+            conn.close()
             return JSONResponse(
                 status_code=400,
                 content={"error": "Done must be true or false"},
             )
 
-        task["done"] = body["done"]
+        current_done = body["done"]
 
-    return task
+    conn.execute(
+        """
+        UPDATE tasks
+        SET title = ?, done = ?
+        WHERE id = ?
+        """,
+        (current_title, current_done, task_id),
+    )
+
+    conn.commit()
+    conn.close()
+
+    return {
+        "id": task_id,
+        "title": current_title,
+        "done": current_done,
+    }
 
 
 # Stage 4: Delete a task
