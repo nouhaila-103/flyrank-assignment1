@@ -89,14 +89,26 @@ def get_tasks():
     description="Returns a single task by its ID.",
 )
 def get_task(task_id: int):
-    for task in tasks:
-        if task["id"] == task_id:
-            return task
+    conn = get_db()
 
-    return JSONResponse(
-        status_code=404,
-        content={"error": f"Task {task_id} not found"},
-    )
+    row = conn.execute(
+        "SELECT id, title, done FROM tasks WHERE id = ?",
+        (task_id,),
+    ).fetchone()
+
+    conn.close()
+
+    if row is None:
+        return JSONResponse(
+            status_code=404,
+            content={"error": f"Task {task_id} not found"},
+        )
+
+    return {
+        "id": row[0],
+        "title": row[1],
+        "done": bool(row[2]),
+    }
 
 
 # Stage 3: Create a task
@@ -104,7 +116,7 @@ def get_task(task_id: int):
     "/tasks",
     status_code=201,
     summary="Create a task",
-    description="Creates a new task with a title and sets done to false.",
+    description="Creates a new task in the SQLite database.",
 )
 def create_task(body: dict):
     title = body.get("title")
@@ -115,18 +127,26 @@ def create_task(body: dict):
             content={"error": "Title is required and cannot be empty"},
         )
 
-    new_id = max([task["id"] for task in tasks], default=0) + 1
+    title = title.strip()
 
-    new_task = {
+    conn = get_db()
+
+    cursor = conn.execute(
+        "INSERT INTO tasks (title, done) VALUES (?, ?)",
+        (title, False),
+    )
+
+    conn.commit()
+
+    new_id = cursor.lastrowid
+
+    conn.close()
+
+    return {
         "id": new_id,
-        "title": title.strip(),
+        "title": title,
         "done": False,
     }
-
-    tasks.append(new_task)
-
-    return new_task
-
 
 # Stage 4: Update a task
 @app.put("/tasks/{task_id}", summary="Update a task")
